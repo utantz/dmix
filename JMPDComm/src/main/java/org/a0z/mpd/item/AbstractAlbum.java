@@ -52,7 +52,8 @@ public abstract class AbstractAlbum extends Item {
     /**
      * This {@code Comparator} adds support for sorting by year to the default {@code comparator}.
      */
-    public static final Comparator<AbstractAlbum> SORT_BY_YEAR = new Comparator<AbstractAlbum>() {
+    public static final Comparator<AbstractAlbum> SORT_BY_YEAR = new Comparator<AbstractAlbum>()
+    {
         /**
          * Compares the two specified objects to determine their relative ordering. The ordering
          * implied by the return value of this method for all possible pairs of
@@ -74,22 +75,17 @@ public abstract class AbstractAlbum extends Item {
          * @throws ClassCastException if objects are not of the correct type.
          */
         @Override
-        public int compare(final AbstractAlbum lhs, final AbstractAlbum rhs) {
-            int compare = 0;
-            final int leftYear = formattedYear(lhs.mYear);
-            final int rightYear = formattedYear(rhs.mYear);
+        public int compare(final AbstractAlbum lhs, final AbstractAlbum rhs)
+        {
+            final long leftYear = lhs.getFormattedYear();
+            final long rightYear = rhs.getFormattedYear();
 
-            if (leftYear < rightYear) {
-                compare = -1;
-            } else if (leftYear > rightYear) {
-                compare = 1;
-            }
+            if (leftYear < rightYear)
+                return -1;
+            else if (leftYear > rightYear)
+                return  1;
 
-            if (compare == 0) {
-                compare = lhs.compareTo(rhs);
-            }
-
-            return compare;
+            return lhs.compareTo(rhs);
         }
 
         /**
@@ -99,28 +95,30 @@ public abstract class AbstractAlbum extends Item {
          * @return The input date formatted to exactly 8 digits,
          * unless date is less than or equal to 0L.
          */
-        private int formattedYear(final long date) {
-            final int result;
+    };
 
-            if (date > 0L) {
-                final StringBuilder stringBuilder = new StringBuilder(8);
-                stringBuilder.append(date);
+    public static final Comparator<AbstractAlbum> SORT_BY_ARTISTNAME_YEAR = new Comparator<AbstractAlbum>() {
+        public int compare(final AbstractAlbum lhs, final AbstractAlbum rhs)
+        {
+            {
+                String leftArtist = lhs.getArtist().getName();
+                String rightArtist = rhs.getArtist().getName();
 
-                final int yearLength = stringBuilder.length();
-
-                if (yearLength > 8) {
-                    stringBuilder.setLength(8);
-                } else if (yearLength < 8) {
-                    while (stringBuilder.length() < 8) {
-                        stringBuilder.append('0');
-                    }
-                }
-                result = Integer.parseInt(stringBuilder.toString());
-            } else {
-                result = 0;
+                int result=leftArtist.compareTo(rightArtist);
+                if (result!=0) return result;
             }
 
-            return result;
+            {
+                final long leftYear = lhs.getFormattedYear();
+                final long rightYear = rhs.getFormattedYear();
+
+                if (leftYear < rightYear)
+                    return -1;
+                else if (leftYear > rightYear)
+                    return 1;
+            }
+
+            return lhs.compareTo(rhs);
         }
     };
 
@@ -216,9 +214,7 @@ public abstract class AbstractAlbum extends Item {
     }
 
     @Override
-    public String getName() {
-        return mName;
-    }
+    public String getName() { return mName; }
 
     public String getPath() {
         return mPath;
@@ -230,6 +226,26 @@ public abstract class AbstractAlbum extends Item {
 
     public long getYear() {
         return mYear;
+    }
+
+    private long getFormattedYear()
+    {
+        final long zuGross=1000000000L;
+        final long zuKlein=100000000L;
+        long y=mYear;
+        if(y!=0)
+            if (y < zuKlein)
+            {
+                do {
+                    y *= 10;
+                } while (y < zuKlein);
+            }
+            else if (y >= zuGross) {
+                do {
+                    y /= 10;
+                } while (y >= zuGross);
+            }
+        return y;
     }
 
     public boolean hasAlbumArtist() {

@@ -32,9 +32,9 @@ import android.widget.AdapterView;
 
 import java.io.IOException;
 
-public class GenresFragment extends BrowseFragment {
-
-    private static final String TAG = "GenresFragment";
+public class GenresFragment extends BrowseFragment
+{
+    protected final String getTAG() { return "GenresFragment"; }
 
     public GenresFragment() {
         super(R.string.addGenre, R.string.genreAdded, MPDCommand.MPD_SEARCH_GENRE);
@@ -43,29 +43,29 @@ public class GenresFragment extends BrowseFragment {
     @Override
     protected void add(final Item item, final boolean replace, final boolean play) {
         try {
-            mApp.oMPDAsyncHelper.oMPD.add((Genre) item, replace, play);
+            getApp().oMPDAsyncHelper.oMPD.add((Genre) item, replace, play);
             Tools.notifyUser(mIrAdded, item);
         } catch (final IOException | MPDException e) {
-            Log.e(TAG, "Failed to add all from playlist.", e);
+            Log.e(getTAG(), "Failed to add all from playlist.", e);
         }
     }
 
     @Override
     protected void add(final Item item, final String playlist) {
         try {
-            mApp.oMPDAsyncHelper.oMPD.addToPlaylist(playlist, (Genre) item);
+            getApp().oMPDAsyncHelper.oMPD.addToPlaylist(playlist, (Genre) item);
             Tools.notifyUser(mIrAdded, item);
         } catch (final IOException | MPDException e) {
-            Log.e(TAG, "Failed to add all genre to playlist.", e);
+            Log.e(getTAG(), "Failed to add all genre to playlist.", e);
         }
     }
 
     @Override
     protected void asyncUpdate() {
         try {
-            mItems = mApp.oMPDAsyncHelper.oMPD.getGenres();
+            mItems = getApp().oMPDAsyncHelper.oMPD.getGenres();
         } catch (final IOException | MPDException e) {
-            Log.e(TAG, "Failed to update list of genres.", e);
+            Log.e(getTAG(), "Failed to update list of genres.", e);
         }
     }
 
@@ -84,6 +84,6 @@ public class GenresFragment extends BrowseFragment {
     public void onItemClick(final AdapterView<?> parent, final View view, final int position,
             final long id) {
         ((ILibraryFragmentActivity) getActivity()).pushLibraryFragment(
-                new ArtistsFragment().init((Genre) mItems.get(position)), "artist");
+                new ArtistsFragment().init((Genre) mItems.get(position)));
     }
 }

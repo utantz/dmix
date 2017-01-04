@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
+ 
 package com.namelessdev.mpdroid.fragments;
 
-import com.namelessdev.mpdroid.MPDApplication;
+import com.namelessdev.mpdroid.BuildConfig;
+import com.namelessdev.mpdroid.MainMenuActivity;
 import com.namelessdev.mpdroid.R;
 import com.namelessdev.mpdroid.adapters.ArrayIndexerAdapter;
-import com.namelessdev.mpdroid.helpers.MPDAsyncHelper.AsyncExecListener;
-import com.namelessdev.mpdroid.library.SimpleLibraryActivity;
 import com.namelessdev.mpdroid.tools.Tools;
 
 import org.a0z.mpd.MPDCommand;
@@ -35,18 +35,16 @@ import org.a0z.mpd.item.Music;
 
 import android.app.AlertDialog;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.StringRes;
-import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentActivity;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
-import android.view.MenuItem.OnMenuItemClickListener;
 import android.view.SubMenu;
 import android.view.View;
 import android.view.ViewGroup;
@@ -65,21 +63,9 @@ import uk.co.senab.actionbarpulltorefresh.library.ActionBarPullToRefresh;
 import uk.co.senab.actionbarpulltorefresh.library.PullToRefreshLayout;
 import uk.co.senab.actionbarpulltorefresh.library.listeners.OnRefreshListener;
 
-public abstract class BrowseFragment extends Fragment implements OnMenuItemClickListener,
-        AsyncExecListener, OnItemClickListener,
-        OnRefreshListener {
-
-    public static final int ADD = 0;
-
-    public static final int ADD_PLAY = 2;
-
-    public static final int ADD_REPLACE = 1;
-
-    public static final int ADD_REPLACE_PLAY = 4;
-
-    public static final int ADD_TO_PLAYLIST = 3;
-
-    public static final int GOTO_ARTIST = 5;
+public abstract class BrowseFragment extends BrowseFragmentNew
+    implements OnItemClickListener, OnRefreshListener
+{
 
     public static final int MAIN = 0;
 
@@ -90,10 +76,6 @@ public abstract class BrowseFragment extends Fragment implements OnMenuItemClick
     public static final int POPUP_COVER_SELECTIVE_CLEAN = 11;
 
     private static final int MIN_ITEMS_BEFORE_FASTSCROLL = 50;
-
-    private static final String TAG = "BrowseFragment";
-
-    protected final MPDApplication mApp = MPDApplication.getInstance();
 
     final String mContext;
 
@@ -118,7 +100,7 @@ public abstract class BrowseFragment extends Fragment implements OnMenuItemClick
     private boolean mFirstUpdateDone = false;
 
     protected BrowseFragment(@StringRes final int rAdd, @StringRes final int rAdded,
-            final String pContext) {
+                             final String pContext) {
         super();
         mIrAdd = rAdd;
         mIrAdded = rAdded;
@@ -128,16 +110,27 @@ public abstract class BrowseFragment extends Fragment implements OnMenuItemClick
         setHasOptionsMenu(false);
     }
 
+    protected MainMenuActivity getMainMenuActivity()
+    {
+        FragmentActivity a=super.getActivity();
+        if(BuildConfig.DEBUG && !(a instanceof MainMenuActivity))
+            Log.wtf("ASSERT", "Activity of AlbumsFragment is not a MainMenuActivity");
+
+        return (MainMenuActivity)a;
+    }
+
+
     protected abstract void add(Item item, boolean replace, boolean play);
 
     protected abstract void add(Item item, String playlist);
 
-    private void addAndReplace(final MenuItem item) {
+    private void addAndReplace(final MenuItem item)
+    {
         final AdapterContextMenuInfo info = (AdapterContextMenuInfo) item.getMenuInfo();
 
-        mApp.oMPDAsyncHelper.execAsync(new Runnable() {
-            @Override
-            public void run() {
+        getApp().oMPDAsyncHelper.execAsync(
+            ()->
+            {
                 boolean replace = false;
                 boolean play = false;
                 switch (item.getGroupId()) {
@@ -149,7 +142,7 @@ public abstract class BrowseFragment extends Fragment implements OnMenuItemClick
                         replace = true;
                         break;
                     case ADD_PLAY:
-                        final MPDStatus status = mApp.oMPDAsyncHelper.oMPD.getStatus();
+                        final MPDStatus status = getApp().oMPDAsyncHelper.oMPD.getStatus();
 
                         /**
                          * Let the user know if we're not going to play the added music.
@@ -165,7 +158,7 @@ public abstract class BrowseFragment extends Fragment implements OnMenuItemClick
                 }
                 add(mItems.get((int) info.id), replace, play);
             }
-        });
+        );
     }
 
     private void addToPlaylist(final MenuItem item) {
@@ -182,13 +175,14 @@ public abstract class BrowseFragment extends Fragment implements OnMenuItemClick
                                 public void onClick(final DialogInterface dialog,
                                         final int which) {
                                     final String name = input.getText().toString().trim();
-                                    if (!name.isEmpty()) {
-                                        mApp.oMPDAsyncHelper.execAsync(new Runnable() {
-                                            @Override
-                                            public void run() {
+                                    if (!name.isEmpty())
+                                    {
+                                        getApp().oMPDAsyncHelper.execAsync(
+                                            ()->
+                                            {
                                                 add(mItems.get(id), name);
                                             }
-                                        });
+                                        );
                                     }
                                 }
                             })
@@ -205,13 +199,6 @@ public abstract class BrowseFragment extends Fragment implements OnMenuItemClick
         }
     }
 
-    @Override
-    public void asyncExecSucceeded(final int jobID) {
-        if (mJobID == jobID) {
-            updateFromItems();
-        }
-
-    }
 
     protected void asyncUpdate() {
 
@@ -270,7 +257,7 @@ public abstract class BrowseFragment extends Fragment implements OnMenuItemClick
         if (index >= 0 && mItems.size() > index) {
             menu.setHeaderTitle(mItems.get((int) info.id).toString());
             // If in simple mode, show "Play" (add, replace & play), "Add to queue" and "Add to playlist"
-            if (mApp.isInSimpleMode()) {
+            if (getApp().isInSimpleMode()) {
                 final MenuItem playItem = menu.add(ADD_REPLACE_PLAY,
                         ADD_REPLACE_PLAY, 0, R.string.play);
                 playItem.setOnMenuItemClickListener(this);
@@ -292,7 +279,7 @@ public abstract class BrowseFragment extends Fragment implements OnMenuItemClick
             }
 
             if (R.string.addPlaylist != mIrAdd && R.string.addStream != mIrAdd &&
-                    mApp.oMPDAsyncHelper.oMPD
+                    getApp().oMPDAsyncHelper.oMPD
                             .isCommandAvailable(MPDCommand.MPD_CMD_LISTPLAYLISTS)) {
 
                 int id = 0;
@@ -302,7 +289,7 @@ public abstract class BrowseFragment extends Fragment implements OnMenuItemClick
                 item.setOnMenuItemClickListener(this);
 
                 try {
-                    final List<Item> playlists = mApp.oMPDAsyncHelper.oMPD.getPlaylists();
+                    final List<Item> playlists = getApp().oMPDAsyncHelper.oMPD.getPlaylists();
 
                     if (null != playlists) {
                         for (final Item pl : playlists) {
@@ -312,7 +299,7 @@ public abstract class BrowseFragment extends Fragment implements OnMenuItemClick
                         }
                     }
                 } catch (final IOException | MPDException e) {
-                    Log.e(TAG, "Failed to parse playlists.", e);
+                    Log.e(getTAG(), "Failed to parse playlists.", e);
                 }
             }
             final MenuItem gotoArtistItem = menu
@@ -339,16 +326,6 @@ public abstract class BrowseFragment extends Fragment implements OnMenuItemClick
     }
 
     @Override
-    public void onDestroy() {
-        try {
-            mApp.oMPDAsyncHelper.removeAsyncExecListener(this);
-        } catch (final Exception e) {
-            Log.e(TAG, "Error while destroying BrowseFragment", e);
-        }
-        super.onDestroy();
-    }
-
-    @Override
     public void onDestroyView() {
         // help out the GC; imitated from ListFragment source
         mLoadingView = null;
@@ -358,7 +335,8 @@ public abstract class BrowseFragment extends Fragment implements OnMenuItemClick
     }
 
     @Override
-    public boolean onMenuItemClick(final MenuItem item) {
+    public boolean onMenuItemClick(final MenuItem item)
+    {
         switch (item.getGroupId()) {
             case ADD_REPLACE_PLAY:
             case ADD_REPLACE:
@@ -372,7 +350,6 @@ public abstract class BrowseFragment extends Fragment implements OnMenuItemClick
             case GOTO_ARTIST:
                 final AdapterContextMenuInfo info = (AdapterContextMenuInfo) item.getMenuInfo();
                 final Object selectedItem = mItems.get((int) info.id);
-                final Intent intent = new Intent(getActivity(), SimpleLibraryActivity.class);
                 Artist artist = null;
 
                 if (selectedItem instanceof Album) {
@@ -383,20 +360,18 @@ public abstract class BrowseFragment extends Fragment implements OnMenuItemClick
                     artist = new Artist(((AbstractMusic) selectedItem).getAlbumArtistOrArtist());
                 }
 
-                if (artist != null) {
-                    intent.putExtra("artist", artist);
-                    startActivityForResult(intent, -1);
-                }
+                if (artist != null)
+                    getMainMenuActivity().pushLibraryFragment(AlbumsFragment.createAlbumsFragment(artist));
                 break;
             default:
                 final String name = item.getTitle().toString();
                 final int id = item.getOrder();
-                mApp.oMPDAsyncHelper.execAsync(new Runnable() {
-                    @Override
-                    public void run() {
+                getApp().oMPDAsyncHelper.execAsync(
+                    ()->
+                    {
                         add(mItems.get(id), name);
                     }
-                });
+                );
                 break;
         }
         return false;
@@ -411,7 +386,7 @@ public abstract class BrowseFragment extends Fragment implements OnMenuItemClick
     @Override
     public void onStart() {
         super.onStart();
-        mApp.setActivity(getActivity());
+        getApp().setActivity(getActivity());
         if (!mFirstUpdateDone) {
             mFirstUpdateDone = true;
             updateList();
@@ -420,7 +395,7 @@ public abstract class BrowseFragment extends Fragment implements OnMenuItemClick
 
     @Override
     public void onStop() {
-        mApp.unsetActivity(getActivity());
+        getApp().unsetActivity(getActivity());
         super.onStop();
     }
 
@@ -518,28 +493,27 @@ public abstract class BrowseFragment extends Fragment implements OnMenuItemClick
                 }
             }
         } catch (final Exception e) {
-            Log.e(TAG, "Exception.", e);
+            Log.e(getTAG(), "Exception.", e);
         }
 
         mLoadingView.setVisibility(View.GONE);
         refreshFastScrollStyle();
     }
 
-    public void updateList() {
+    public void updateList()
+    {
         mList.setAdapter(null);
         mNoResultView.setVisibility(View.GONE);
         mLoadingView.setVisibility(View.VISIBLE);
-        if (mPullToRefreshLayout != null) {
+        if (mPullToRefreshLayout != null)
+        {
             mPullToRefreshLayout.setEnabled(false);
         }
 
         // Loading Artists asynchronous...
-        mApp.oMPDAsyncHelper.addAsyncExecListener(this);
-        mJobID = mApp.oMPDAsyncHelper.execAsync(new Runnable() {
-            @Override
-            public void run() {
-                asyncUpdate();
-            }
-        });
+        getApp().oMPDAsyncHelper.execAsync(
+            ()->asyncUpdate(),
+            ()->updateFromItems()
+        );
     }
 }

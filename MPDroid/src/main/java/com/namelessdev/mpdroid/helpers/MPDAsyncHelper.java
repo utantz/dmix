@@ -31,6 +31,7 @@ import android.os.Message;
 import android.preference.PreferenceManager;
 
 import java.util.Collection;
+import java.util.TreeMap;
 
 /**
  * This Class implements the whole MPD Communication as a thread. It also "translates" the monitor
@@ -75,7 +76,8 @@ public class MPDAsyncHelper implements Handler.Callback {
 
     public final MPD oMPD;
 
-    private final Collection<AsyncExecListener> mAsyncExecListeners;
+    private final TreeMap<Integer,Runnable> mAsyncExecListeners =
+        new TreeMap<>();
 
     private final Collection<ConnectionInfoListener> mConnectionInfoListeners;
 
@@ -107,17 +109,11 @@ public class MPDAsyncHelper implements Handler.Callback {
         mWorkerHandler = oMPDAsyncWorker.startThread();
         new SettingsHelper(this).updateConnectionSettings();
 
-        mAsyncExecListeners = new WeakLinkedList<>("AsyncExecListener");
+        // mAsyncExecListenersOld = new WeakLinkedList<>("AsyncExecListener");
         mConnectionListeners = new WeakLinkedList<>("ConnectionListener");
         mConnectionInfoListeners = new WeakLinkedList<>("ConnectionInfoListener");
         mStatusChangeListeners = new WeakLinkedList<>("StatusChangeListener");
         mTrackPositionListeners = new WeakLinkedList<>("TrackPositionListener");
-    }
-
-    public void addAsyncExecListener(final AsyncExecListener listener) {
-        if (!mAsyncExecListeners.contains(listener)) {
-            mAsyncExecListeners.add(listener);
-        }
     }
 
     public void addConnectionInfoListener(final ConnectionInfoListener listener) {
@@ -160,12 +156,18 @@ public class MPDAsyncHelper implements Handler.Callback {
      * @param run Runnable to execute in background thread.
      * @return JobID, which is brought back with the AsyncExecListener interface.
      */
-    public int execAsync(final Runnable run) {
-        final int activeJobID = sJobID;
-        sJobID++;
-        mWorkerHandler.obtainMessage(MPDAsyncWorker.EVENT_EXEC_ASYNC, activeJobID, 0, run)
-                .sendToTarget();
-        return activeJobID;
+    public void execAsync(final Runnable task, final Runnable taskFinished)
+    {
+        final int activeJobID = sJobID++;
+
+        mAsyncExecListeners.put(activeJobID, taskFinished);
+        mWorkerHandler.obtainMessage(MPDAsyncWorker.EVENT_EXEC_ASYNC, activeJobID, 0, task)
+                      .sendToTarget();
+    }
+
+    public void execAsync(final Runnable task)
+    {
+        execAsync(task, ()->{});
     }
 
     /**
@@ -270,13 +272,15 @@ public class MPDAsyncHelper implements Handler.Callback {
                     }
                     break;
                 case MPDAsyncWorker.EVENT_EXEC_ASYNC_FINISHED:
-                    // Asynchronous operation finished, call the listeners and supply the JobID...
-                    for (final AsyncExecListener listener : mAsyncExecListeners) {
-                        if (listener != null) {
-                            listener.asyncExecSucceeded(msg.arg1);
-                        }
+                {
+                    Runnable taskFinished= mAsyncExecListeners.get(msg.arg1);
+                    if(taskFinished!=null)
+                    {
+                        taskFinished.run();
+                        mAsyncExecListeners.remove(msg.arg1);
                     }
-                    break;
+                }
+                break;
                 default:
                     result = false;
                     break;
@@ -290,10 +294,6 @@ public class MPDAsyncHelper implements Handler.Callback {
 
     public boolean isStatusMonitorAlive() {
         return oMPDAsyncWorker.isStatusMonitorAlive();
-    }
-
-    public void removeAsyncExecListener(final AsyncExecListener listener) {
-        mAsyncExecListeners.remove(listener);
     }
 
     public void removeConnectionInfoListener(final ConnectionInfoListener listener) {
@@ -335,11 +335,6 @@ public class MPDAsyncHelper implements Handler.Callback {
         mWorkerHandler.sendEmptyMessage(MPDAsyncWorker.EVENT_STOP_STATUS_MONITOR);
     }
 
-    // Interface for callback when Asynchronous operations are finished
-    public interface AsyncExecListener {
-
-        void asyncExecSucceeded(int jobID);
-    }
 
     public interface ConnectionInfoListener {
 

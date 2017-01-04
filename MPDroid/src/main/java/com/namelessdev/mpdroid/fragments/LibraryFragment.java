@@ -127,13 +127,7 @@ public class LibraryFragment extends Fragment {
 
             switch (tab) {
                 case LibraryTabsUtil.TAB_ALBUMS:
-                    final SharedPreferences settings = PreferenceManager
-                            .getDefaultSharedPreferences(mApp);
-                    if (settings.getBoolean(PREFERENCE_ALBUM_LIBRARY, true)) {
-                        fragment = new AlbumsGridFragment(null);
-                    } else {
-                        fragment = new AlbumsFragment(null);
-                    }
+                    fragment=AlbumsFragment.createAlbumsFragment(null);
                     break;
                 case LibraryTabsUtil.TAB_ARTISTS:
                     fragment = new ArtistsFragment().init(null);

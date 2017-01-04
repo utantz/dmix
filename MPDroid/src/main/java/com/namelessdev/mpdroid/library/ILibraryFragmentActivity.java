@@ -16,9 +16,9 @@
 
 package com.namelessdev.mpdroid.library;
 
-import android.support.v4.app.Fragment;
+import com.namelessdev.mpdroid.fragments.BrowseFragmentNew;
 
 public interface ILibraryFragmentActivity {
 
-    void pushLibraryFragment(Fragment fragment, String label);
+    void pushLibraryFragment(BrowseFragmentNew fragment);
 }

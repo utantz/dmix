@@ -18,6 +18,7 @@ package com.namelessdev.mpdroid.fragments;
 
 import com.mobeta.android.dslv.DragSortController;
 import com.mobeta.android.dslv.DragSortListView;
+import com.namelessdev.mpdroid.BuildConfig;
 import com.namelessdev.mpdroid.MPDApplication;
 import com.namelessdev.mpdroid.MainMenuActivity;
 import com.namelessdev.mpdroid.R;
@@ -26,7 +27,6 @@ import com.namelessdev.mpdroid.helpers.AlbumInfo;
 import com.namelessdev.mpdroid.helpers.CoverAsyncHelper;
 import com.namelessdev.mpdroid.helpers.CoverDownloadListener;
 import com.namelessdev.mpdroid.helpers.QueueControl;
-import com.namelessdev.mpdroid.library.SimpleLibraryActivity;
 import com.namelessdev.mpdroid.models.AbstractPlaylistMusic;
 import com.namelessdev.mpdroid.models.PlaylistSong;
 import com.namelessdev.mpdroid.models.PlaylistStream;
@@ -101,8 +101,6 @@ public class QueueFragment extends ListFragment implements StatusChangeListener,
 
     protected ActionMode mActionMode;
 
-    protected FragmentActivity mActivity;
-
     protected DragSortController mController;
 
     protected String mFilter = null;
@@ -132,7 +130,7 @@ public class QueueFragment extends ListFragment implements StatusChangeListener,
         @Override
         public void onClick(final View v) {
             mPopupSongID = (Integer) v.getTag();
-            final PopupMenu popupMenu = new PopupMenu(mActivity, v);
+            final PopupMenu popupMenu = new PopupMenu(getActivity(), v);
             popupMenu.getMenuInflater().inflate(R.menu.mpd_playlistcnxmenu, popupMenu.getMenu());
             if (getPlaylistItemSong(mPopupSongID).isStream()) {
                 popupMenu.getMenu().findItem(R.id.PLCX_goto).setVisible(false);
@@ -182,8 +180,16 @@ public class QueueFragment extends ListFragment implements StatusChangeListener,
     @Override
     public void onActivityCreated(final Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        mActivity = getActivity();
         refreshListColorCacheHint();
+    }
+
+    private MainMenuActivity getMainMenuActivity()
+    {
+        FragmentActivity a=super.getActivity();
+	    if(BuildConfig.DEBUG && !(a instanceof MainMenuActivity))
+		    Log.wtf("ASSERT", "Activity of QueueFragment is not a MainMenuActivity");
+
+        return (MainMenuActivity)a;
     }
 
     /*
@@ -222,10 +228,11 @@ public class QueueFragment extends ListFragment implements StatusChangeListener,
             }
 
             @Override
-            public boolean onQueryTextSubmit(final String query) {
+            public boolean onQueryTextSubmit(final String query)
+            {
                 // Hide the keyboard and give focus to the list
-                final InputMethodManager imm = (InputMethodManager) mActivity
-                        .getSystemService(Context.INPUT_METHOD_SERVICE);
+                final InputMethodManager imm =
+                        (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
                 imm.hideSoftInputFromWindow(mSearchView.getWindowToken(), 0);
                 mList.requestFocus();
                 return true;
@@ -376,10 +383,13 @@ public class QueueFragment extends ListFragment implements StatusChangeListener,
                     break;
                 }
 
-                intent = new Intent(mActivity, SimpleLibraryActivity.class);
-                intent.putExtra("artist", music.getArtistAsArtist());
-                startActivityForResult(intent, -1);
+	            // TODO: Uwe
+	            getMainMenuActivity().pushLibraryFragment(
+		            AlbumsFragment.createAlbumsFragment(music.getArtistAsArtist())
+	            );
+	            getMainMenuActivity().showLibraryView();
                 break;
+
             case R.id.PLCX_goToAlbum:
                 music = getPlaylistItemSong(mPopupSongID);
 
@@ -387,19 +397,23 @@ public class QueueFragment extends ListFragment implements StatusChangeListener,
                     break;
                 }
 
-                intent = new Intent(mActivity, SimpleLibraryActivity.class);
-                intent.putExtra("album", music.getAlbumAsAlbum());
-                startActivityForResult(intent, -1);
+                // TODO: Uwe
+                getMainMenuActivity().pushLibraryFragment(
+	                new SongsFragment().init(music.getAlbumAsAlbum()));
+                getMainMenuActivity().showLibraryView();
                 break;
+
             case R.id.PLCX_goToFolder:
                 music = getPlaylistItemSong(mPopupSongID);
                 if (music == null || isEmpty(music.getFullPath())) {
                     break;
                 }
-                intent = new Intent(mActivity, SimpleLibraryActivity.class);
-                intent.putExtra("folder", music.getParent());
-                startActivityForResult(intent, -1);
+
+	            getMainMenuActivity().pushLibraryFragment(
+		            new FSFragment().init(music.getParent()));
+	            getMainMenuActivity().showLibraryView();
                 break;
+
             default:
                 break;
         }
@@ -436,7 +450,7 @@ public class QueueFragment extends ListFragment implements StatusChangeListener,
             playlistsArray[playlistsArray.length - 1] = getResources()
                     .getString(R.string.newPlaylist); // "new playlist"
             mPlaylistToSave = playlistsArray[playlistsArray.length - 1];
-            new AlertDialog.Builder(mActivity) // dialog with list of playlists
+            new AlertDialog.Builder(getMainMenuActivity()) // dialog with list of playlists
                     .setTitle(R.string.playlistName)
                     .setSingleChoiceItems
                             (playlistsArray, playlistsArray.length - 1,
@@ -536,8 +550,8 @@ public class QueueFragment extends ListFragment implements StatusChangeListener,
     void savePlaylist(final String name) {
         if (name.equals(getResources().getString(R.string.newPlaylist))) {
             // if "new playlist", show dialog with EditText for new playlist:
-            final EditText input = new EditText(mActivity);
-            new AlertDialog.Builder(mActivity)
+            final EditText input = new EditText(getActivity());
+            new AlertDialog.Builder(getActivity())
                     .setTitle(R.string.newPlaylistPrompt)
                     .setView(input)
                     .setPositiveButton
@@ -572,22 +586,21 @@ public class QueueFragment extends ListFragment implements StatusChangeListener,
         }
     }
 
-    public void scrollToNowPlaying() {
-        final int songPos = mApp.oMPDAsyncHelper.oMPD.getStatus().getSongPos();
+    public void scrollToNowPlaying()
+    {
+	    final int songPos = mApp.oMPDAsyncHelper.oMPD.getStatus().getSongPos();
 
-        if (songPos == -1) {
-            Log.d(TAG, "Missing list item.");
-        } else {
+      if (songPos == -1)
+	      Log.d(TAG, "Missing list item.");
+      else
+      {
+	      getMainMenuActivity().showQueue();
 
-            if (mActivity instanceof MainMenuActivity) {
-                ((MainMenuActivity) mActivity).showQueue();
-            }
-
-            final ListView listView = getListView();
-            listView.requestFocusFromTouch();
-            listView.setSelection(songPos);
-            listView.clearFocus();
-        }
+				final ListView listView = getListView();
+				listView.requestFocusFromTouch();
+				listView.setSelection(songPos);
+				listView.clearFocus();
+      }
     }
 
     @Override
@@ -707,7 +720,7 @@ public class QueueFragment extends ListFragment implements StatusChangeListener,
      * @param listPlayingID The current playing playlist id.
      */
     protected void updateScrollbar(final ArrayList newSongList, final int listPlayingID) {
-        mActivity.runOnUiThread(new Runnable() {
+        getActivity().runOnUiThread(new Runnable() {
             /**
              * This is a helper method to workaround shortcomings of the fast scroll API.
              *
@@ -730,7 +743,7 @@ public class QueueFragment extends ListFragment implements StatusChangeListener,
                 final int firstVisibleElementIndex = mList.getFirstVisiblePosition();
                 final View firstVisibleItem = mList.getChildAt(0);
                 final int firstVisiblePosition;
-                final ArrayAdapter songs = new QueueAdapter(mActivity, R.layout.playlist_queue_item,
+                final ArrayAdapter songs = new QueueAdapter(getActivity(), R.layout.playlist_queue_item,
                         newSongList
                 );
 

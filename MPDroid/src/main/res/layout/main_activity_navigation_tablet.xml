@@ -68,7 +68,7 @@
 
                     <ImageButton
                         android:id="@+id/header_overflow_menu"
-                        style="?attr/overflowButton"
+                        style="@android:style/Widget.Holo.ActionButton.Overflow"
                         android:layout_width="56dip"
                         android:layout_height="match_parent"
                         android:contentDescription="@string/menuButton" />

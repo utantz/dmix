@@ -16,7 +16,9 @@
 
 package com.namelessdev.mpdroid.fragments;
 
+import com.namelessdev.mpdroid.BuildConfig;
 import com.namelessdev.mpdroid.MPDApplication;
+import com.namelessdev.mpdroid.MainMenuActivity;
 import com.namelessdev.mpdroid.R;
 import com.namelessdev.mpdroid.helpers.AlbumCoverDownloadListener;
 import com.namelessdev.mpdroid.helpers.AlbumInfo;
@@ -24,7 +26,6 @@ import com.namelessdev.mpdroid.helpers.CoverAsyncHelper;
 import com.namelessdev.mpdroid.helpers.CoverManager;
 import com.namelessdev.mpdroid.helpers.MPDControl;
 import com.namelessdev.mpdroid.helpers.UpdateTrackInfo;
-import com.namelessdev.mpdroid.library.SimpleLibraryActivity;
 
 import org.a0z.mpd.MPDCommand;
 import org.a0z.mpd.MPDStatus;
@@ -281,6 +282,15 @@ public class NowPlayingFragment extends Fragment implements StatusChangeListener
         seekBarTrack.setOnSeekBarChangeListener(seekBarTrackListener);
 
         return seekBarTrack;
+    }
+
+    private MainMenuActivity getMainMenuActivity()
+    {
+        FragmentActivity a=super.getActivity();
+        if(BuildConfig.DEBUG && !(a instanceof MainMenuActivity))
+            Log.wtf("ASSERT", "Activity of NowPlayingFragment is not a MainMenuActivity");
+
+        return (MainMenuActivity)a;
     }
 
     private void applyViewVisibility(final View view, final String property) {
@@ -601,69 +611,41 @@ public class NowPlayingFragment extends Fragment implements StatusChangeListener
      * @return {@code true} if this is handled by a simple library activity,
      * {@code false} otherwise.
      */
-    private boolean isSimpleLibraryItem(final int itemId) {
-        Intent intent = null;
+    private boolean isSimpleLibraryItem(final int itemId)
+    {
+        BrowseFragment fr=null;
 
-        switch (itemId) {
+        switch (itemId)
+        {
             case POPUP_ALBUM:
+                fr=new SongsFragment().init(mCurrentSong.getAlbumAsAlbum());
+                break;
+
             case POPUP_ALBUM_ARTIST:
+                fr=AlbumsFragment.createAlbumsFragment(mCurrentSong.getAlbumArtistAsArtist());
+                break;
+
             case POPUP_ARTIST:
+                fr=AlbumsFragment.createAlbumsFragment(mCurrentSong.getArtistAsArtist());
+                break;
+
             case POPUP_FOLDER:
-                if (mCurrentSong != null) {
-                    intent = simpleLibraryMusicItem(itemId);
-                }
-                break;
-            case POPUP_STREAM:
-                intent = new Intent(mActivity, SimpleLibraryActivity.class);
-                intent.putExtra("streams", true);
-                break;
-            default:
-                break;
-        }
-
-        if (intent != null) {
-            /**
-             * Set the result for SimpleLibraryActivity to
-             * return so getCallingActivity() will work.
-             */
-            startActivityForResult(intent, 1);
-        }
-
-        return intent != null;
-    }
-
-    /**
-     * This method handles any simple library activity item ids which handle music items.
-     *
-     * @param itemId The itemId to attempt to handle.
-     * @return An intent to start the {@link com.namelessdev.mpdroid.library.SimpleLibraryActivity}.
-     */
-    private Intent simpleLibraryMusicItem(final int itemId) {
-        final Intent intent = new Intent(mActivity, SimpleLibraryActivity.class);
-
-        switch (itemId) {
-            case POPUP_ALBUM:
-                intent.putExtra("album", mCurrentSong.getAlbumAsAlbum());
-                break;
-            case POPUP_ALBUM_ARTIST:
-                intent.putExtra("artist", mCurrentSong.getAlbumArtistAsArtist());
-                break;
-            case POPUP_ARTIST:
-                intent.putExtra("artist", mCurrentSong.getArtistAsArtist());
-                break;
-            case POPUP_FOLDER:
+            {
                 final String path = mCurrentSong.getFullPath();
                 final String parent = mCurrentSong.getParent();
-                if (path == null || parent == null) {
-                    break;
-                }
-                intent.putExtra("folder", parent);
-                break;
-            default:
+                fr=new FSFragment().init(parent);
+            }
+            break;
+
+            case POPUP_STREAM:
+                fr=new StreamsFragment();
                 break;
         }
 
-        return intent;
+        getMainMenuActivity().pushLibraryFragment(fr); // TODO: Uwe itemtext anpassen
+        getMainMenuActivity().showLibraryView();
+
+        return true;
     }
 
     @Override

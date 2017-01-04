@@ -73,6 +73,11 @@ public class NowPlayingSmallFragment extends Fragment implements StatusChangeLis
 
     private TextView mSongTitle;
 
+    public NowPlayingSmallFragment()
+    {
+        int a=0;
+    }
+
     @Override
     public void connectionStateChanged(final boolean connected, final boolean connectionLost) {
         if (connected && isAdded() && mForceStatusUpdate) {
@@ -129,6 +134,16 @@ public class NowPlayingSmallFragment extends Fragment implements StatusChangeLis
         buttonNext.setOnClickListener(mButtonClickListener);
 
         mCoverArt = (ImageView) view.findViewById(R.id.albumCover);
+        mCoverArt.setOnClickListener(
+            new OnClickListener()
+            {
+                public void onClick(final View v)
+                {
+                    int xx=0;
+                }
+            }
+        );
+
         final ProgressBar coverArtProgress = (ProgressBar) view
                 .findViewById(R.id.albumCoverProgress);
         final CoverDownloadListener coverArtListener = new AlbumCoverDownloadListener(

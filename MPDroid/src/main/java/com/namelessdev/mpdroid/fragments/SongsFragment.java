@@ -23,7 +23,6 @@ import com.namelessdev.mpdroid.helpers.AlbumInfo;
 import com.namelessdev.mpdroid.helpers.CoverAsyncHelper;
 import com.namelessdev.mpdroid.helpers.CoverInfo;
 import com.namelessdev.mpdroid.helpers.CoverManager;
-import com.namelessdev.mpdroid.library.SimpleLibraryActivity;
 import com.namelessdev.mpdroid.tools.Tools;
 import com.namelessdev.mpdroid.views.SongDataBinder;
 
@@ -33,7 +32,6 @@ import org.a0z.mpd.item.Album;
 import org.a0z.mpd.item.Item;
 import org.a0z.mpd.item.Music;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.StringRes;
 import android.support.v4.widget.PopupMenuCompat;
@@ -58,11 +56,12 @@ import android.widget.TextView;
 
 import java.io.IOException;
 
-public class SongsFragment extends BrowseFragment {
+public class SongsFragment extends BrowseFragment
+{
 
     private static final String EXTRA_ALBUM = "album";
 
-    private static final String TAG = "SongsFragment";
+    protected final String getTAG() { return "SongsFragment"; }
 
     Album mAlbum = null;
 
@@ -92,20 +91,20 @@ public class SongsFragment extends BrowseFragment {
     protected void add(final Item item, final boolean replace, final boolean play) {
         final Music music = (Music) item;
         try {
-            mApp.oMPDAsyncHelper.oMPD.add(music, replace, play);
+            getApp().oMPDAsyncHelper.oMPD.add(music, replace, play);
             Tools.notifyUser(R.string.songAdded, music.getTitle(), music.getName());
         } catch (final IOException | MPDException e) {
-            Log.e(TAG, "Failed to add, remove, play.", e);
+            Log.e(getTAG(), "Failed to add, remove, play.", e);
         }
     }
 
     @Override
     protected void add(final Item item, final String playlist) {
         try {
-            mApp.oMPDAsyncHelper.oMPD.addToPlaylist(playlist, (Music) item);
+            getApp().oMPDAsyncHelper.oMPD.addToPlaylist(playlist, (Music) item);
             Tools.notifyUser(mIrAdded, item);
         } catch (final IOException | MPDException e) {
-            Log.e(TAG, "Failed to add to playlist.", e);
+            Log.e(getTAG(), "Failed to add to playlist.", e);
         }
     }
 
@@ -115,9 +114,9 @@ public class SongsFragment extends BrowseFragment {
             if (getActivity() == null) {
                 return;
             }
-            mItems = mApp.oMPDAsyncHelper.oMPD.getSongs(mAlbum);
+            mItems = getApp().oMPDAsyncHelper.oMPD.getSongs(mAlbum);
         } catch (final IOException | MPDException e) {
-            Log.e(TAG, "Failed to async update.", e);
+            Log.e(getTAG(), "Failed to async update.", e);
         }
     }
 
@@ -278,19 +277,23 @@ public class SongsFragment extends BrowseFragment {
         mPopupMenu.getMenu().add(Menu.NONE, ADD_PLAY, Menu.NONE, R.string.addAndPlay);
         mPopupMenu.getMenu().add(Menu.NONE, GOTO_ARTIST, Menu.NONE, R.string.goToArtist);
 
-        mPopupMenu.setOnMenuItemClickListener(new OnMenuItemClickListener() {
-
+        mPopupMenu.setOnMenuItemClickListener(new OnMenuItemClickListener()
+        {
             @Override
-            public boolean onMenuItemClick(final MenuItem item) {
+            public boolean onMenuItemClick(final MenuItem item)
+            {
                 final int itemId = item.getItemId();
-                if (itemId == GOTO_ARTIST) {
-                    final Intent intent = new Intent(getActivity(), SimpleLibraryActivity.class);
-                    intent.putExtra("artist", mAlbum.getArtist());
-                    startActivityForResult(intent, -1);
-                } else {
-                    mApp.oMPDAsyncHelper.execAsync(new Runnable() {
-                        @Override
-                        public void run() {
+                if (itemId == GOTO_ARTIST)
+                {
+                    getMainMenuActivity().pushLibraryFragment(
+                        AlbumsFragment.createAlbumsFragment(mAlbum.getArtist())
+                    );
+                }
+                else
+                {
+                    getApp().oMPDAsyncHelper.execAsync(
+                        ()->
+                        {
                             boolean replace = false;
                             boolean play = false;
                             switch (itemId) {
@@ -308,13 +311,13 @@ public class SongsFragment extends BrowseFragment {
                                     break;
                             }
                             try {
-                                mApp.oMPDAsyncHelper.oMPD.add(mAlbum, replace, play);
+                                getApp().oMPDAsyncHelper.oMPD.add(mAlbum, replace, play);
                                 Tools.notifyUser(R.string.albumAdded, mAlbum);
                             } catch (final IOException | MPDException e) {
-                                Log.e(TAG, "Failed to add, replace, play.", e);
+                                Log.e(getTAG(), "Failed to add, replace, play.", e);
                             }
                         }
-                    });
+                    );
                 }
                 return true;
             }
@@ -389,32 +392,36 @@ public class SongsFragment extends BrowseFragment {
 
     @Override
     public void onItemClick(final AdapterView<?> parent, final View view, final int position,
-            final long id) {
+            final long id)
+    {
         // If in simple mode : add, replace and play the shown album.
-        if (mApp.isInSimpleMode()) {
-            mApp.oMPDAsyncHelper.execAsync(new Runnable() {
-                @Override
-                public void run() {
+        if (getApp().isInSimpleMode())
+        {
+            getApp().oMPDAsyncHelper.execAsync(
+                ()->
+                {
                     try {
-                        mApp.oMPDAsyncHelper.oMPD.add(mAlbum, true, true);
+                        getApp().oMPDAsyncHelper.oMPD.add(mAlbum, true, true);
                         // Account for the list header
                         int positionCorrection = 0;
                         if (mList instanceof ListView) {
                             positionCorrection = ((ListView) mList).getHeaderViewsCount();
                         }
-                        mApp.oMPDAsyncHelper.oMPD.seekByIndex(position - positionCorrection, 0l);
+                        getApp().oMPDAsyncHelper.oMPD.seekByIndex(position - positionCorrection, 0l);
                     } catch (final IOException | MPDException e) {
-                        Log.e(TAG, "Failed to seek by index.", e);
+                        Log.e(getTAG(), "Failed to seek by index.", e);
                     }
                 }
-            });
-        } else {
-            mApp.oMPDAsyncHelper.execAsync(new Runnable() {
-                @Override
-                public void run() {
+            );
+        }
+        else
+        {
+            getApp().oMPDAsyncHelper.execAsync(
+                ()->
+                {
                     add((Item) parent.getAdapter().getItem(position), false, false);
                 }
-            });
+            );
         }
 
     }

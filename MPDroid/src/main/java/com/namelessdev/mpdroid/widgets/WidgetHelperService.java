@@ -44,7 +44,8 @@ public class WidgetHelperService extends IntentService {
     }
 
     @Override
-    protected void onHandleIntent(final Intent intent) {
+    protected void onHandleIntent(final Intent intent)
+    {
         // get MPD connection
         mApp.setActivity(this);
 
@@ -53,12 +54,12 @@ public class WidgetHelperService extends IntentService {
         final String action = intent.getAction();
 
         // schedule real work
-        mApp.oMPDAsyncHelper.execAsync(new Runnable() {
-            @Override
-            public void run() {
+        mApp.oMPDAsyncHelper.execAsync(
+            ()->
+            {
                 processIntent(action, mpd);
             }
-        });
+        );
 
         // clean up
         mApp.unsetActivity(this);

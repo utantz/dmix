@@ -40,11 +40,12 @@ import android.widget.ListAdapter;
 
 import java.io.IOException;
 
-public class StoredPlaylistFragment extends BrowseFragment {
+public class StoredPlaylistFragment extends BrowseFragment
+{
 
     private static final String EXTRA_PLAYLIST_NAME = "playlist";
 
-    private static final String TAG = "StoredPlaylistFragment";
+    protected final String getTAG() { return "StoredPlaylistFragment"; }
 
     private String mPlaylistName;
 
@@ -57,22 +58,22 @@ public class StoredPlaylistFragment extends BrowseFragment {
     protected void add(final Item item, final boolean replace, final boolean play) {
         final Music music = (Music) item;
         try {
-            mApp.oMPDAsyncHelper.oMPD.add(music, replace, play);
+            getApp().oMPDAsyncHelper.oMPD.add(music, replace, play);
             if (!play) {
                 Tools.notifyUser(R.string.songAdded, music.getTitle(), music.getName());
             }
         } catch (final IOException | MPDException e) {
-            Log.e(TAG, "Failed to add.", e);
+            Log.e(getTAG(), "Failed to add.", e);
         }
     }
 
     @Override
     protected void add(final Item item, final String playlist) {
         try {
-            mApp.oMPDAsyncHelper.oMPD.addToPlaylist(playlist, (Music) item);
+            getApp().oMPDAsyncHelper.oMPD.addToPlaylist(playlist, (Music) item);
             Tools.notifyUser(mIrAdded, item);
         } catch (final IOException | MPDException e) {
-            Log.e(TAG, "Failed to add.", e);
+            Log.e(getTAG(), "Failed to add.", e);
         }
     }
 
@@ -82,9 +83,9 @@ public class StoredPlaylistFragment extends BrowseFragment {
             if (getActivity() == null) {
                 return;
             }
-            mItems = mApp.oMPDAsyncHelper.oMPD.getPlaylistSongs(mPlaylistName);
+            mItems = getApp().oMPDAsyncHelper.oMPD.getPlaylistSongs(mPlaylistName);
         } catch (final IOException | MPDException e) {
-            Log.e(TAG, "Failed to update.", e);
+            Log.e(getTAG(), "Failed to update.", e);
         }
     }
 
@@ -137,14 +138,13 @@ public class StoredPlaylistFragment extends BrowseFragment {
 
     @Override
     public void onItemClick(final AdapterView<?> parent, final View view, final int position,
-            final long id) {
-        mApp.oMPDAsyncHelper.execAsync(new Runnable() {
-            @Override
-            public void run() {
-                add((Item) parent.getAdapter().getItem(position), mApp.isInSimpleMode(),
-                        mApp.isInSimpleMode());
-            }
-        });
+            final long id)
+    {
+        getApp().oMPDAsyncHelper.execAsync
+            (
+                ()->add((Item) parent.getAdapter().getItem(position), getApp().isInSimpleMode(),
+                        getApp().isInSimpleMode())
+            );
     }
 
     @Override

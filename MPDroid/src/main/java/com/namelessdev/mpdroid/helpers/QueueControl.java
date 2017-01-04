@@ -68,10 +68,11 @@ public final class QueueControl {
      * @param command  The playlist command to send.
      * @param intArray The int array argument for the command.
      */
-    public static void run(final int command, final int[] intArray) {
-        APP.oMPDAsyncHelper.execAsync(new Runnable() {
-            @Override
-            public void run() {
+    public static void run(final int command, final int[] intArray)
+    {
+        APP.oMPDAsyncHelper.execAsync(
+            ()->
+            {
                 try {
                     if (command == REMOVE_BY_ID) {
                         PLAYLIST.removeById(intArray);
@@ -80,7 +81,7 @@ public final class QueueControl {
                     Log.e(TAG, "Failed to remove by playlist id. intArray: " + intArray, e);
                 }
             }
-        });
+        );
     }
 
     /**
@@ -90,19 +91,22 @@ public final class QueueControl {
      * @param command The playlist command to send.
      * @param s       The string argument for the command.
      */
-    public static void run(final int command, final String s) {
-        APP.oMPDAsyncHelper.execAsync(new Runnable() {
-            @Override
-            public void run() {
-                try {
+    public static void run(final int command, final String s)
+    {
+        APP.oMPDAsyncHelper.execAsync(
+            ()->
+            {
+                try
+                {
                     if (command == SAVE_PLAYLIST) {
                         PLAYLIST.savePlaylist(s);
                     }
-                } catch (final IOException | MPDException e) {
+                } catch (final IOException | MPDException e)
+                {
                     Log.e(TAG, "Failed to save the playlist. String: " + s, e);
                 }
             }
-        });
+        );
     }
 
     /**

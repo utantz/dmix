@@ -72,10 +72,11 @@ public class OutputsFragment extends ListFragment implements AdapterView.OnItemC
 
     @Override
     public void onItemClick(
-            final AdapterView<?> parent, final View view, final int position, final long id) {
-        mApp.oMPDAsyncHelper.execAsync(new Runnable() {
-            @Override
-            public void run() {
+            final AdapterView<?> parent, final View view, final int position, final long id)
+    {
+        mApp.oMPDAsyncHelper.execAsync(
+            ()->
+            {
                 final MPD mpd = mApp.oMPDAsyncHelper.oMPD;
                 final MPDOutput output = mOutputs.get(position);
                 try {
@@ -97,13 +98,14 @@ public class OutputsFragment extends ListFragment implements AdapterView.OnItemC
                     });
                 }
             }
-        });
+        );
     }
 
-    public void refreshOutputs() {
-        mApp.oMPDAsyncHelper.execAsync(new Runnable() {
-            @Override
-            public void run() {
+    public void refreshOutputs()
+    {
+        mApp.oMPDAsyncHelper.execAsync(
+            ()->
+            {
                 try {
                     final List<MPDOutput> mpdOutputs = mApp.oMPDAsyncHelper.oMPD.getOutputs();
                     mOutputs.clear();
@@ -131,6 +133,6 @@ public class OutputsFragment extends ListFragment implements AdapterView.OnItemC
                     });
                 }
             }
-        });
+        );
     }
 }

@@ -39,14 +39,10 @@ public class AlbumsGridFragment extends AlbumsFragment {
     private static final int MIN_ITEMS_BEFORE_FAST_SCROLL = 6;
 
     public AlbumsGridFragment() {
-        this(null);
+        this(null, null);
     }
 
-    public AlbumsGridFragment(final Artist artist) {
-        this(artist, null);
-    }
-
-    public AlbumsGridFragment(final Artist artist, final Genre genre) {
+    protected AlbumsGridFragment(final Artist artist, final Genre genre) {
         super(artist, genre);
     }
 

@@ -16,10 +16,11 @@
 
 package com.namelessdev.mpdroid;
 
-import com.namelessdev.mpdroid.fragments.BrowseFragment;
+import com.namelessdev.mpdroid.fragments.BrowseFragmentNew;
 import com.namelessdev.mpdroid.fragments.LibraryFragment;
 import com.namelessdev.mpdroid.fragments.OutputsFragment;
 import com.namelessdev.mpdroid.fragments.QueueFragment;
+import com.namelessdev.mpdroid.fragments.SearchFragment;
 import com.namelessdev.mpdroid.helpers.MPDConnectionHandler;
 import com.namelessdev.mpdroid.helpers.MPDControl;
 import com.namelessdev.mpdroid.library.ILibraryFragmentActivity;
@@ -32,6 +33,7 @@ import org.a0z.mpd.MPD;
 import org.a0z.mpd.MPDStatus;
 
 import android.app.AlertDialog;
+import android.app.SearchManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -43,8 +45,8 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.StrictMode;
 import android.preference.PreferenceManager;
+import android.provider.SearchRecentSuggestions;
 import android.support.annotation.NonNull;
-import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentManager.OnBackStackChangedListener;
 import android.support.v4.app.FragmentTransaction;
@@ -490,9 +492,9 @@ public class MainMenuActivity extends MPDroidActivities.MPDroidActivity implemen
         mApp.setupServiceBinder();
 
         if (mApp.isTabletUiEnabled()) {
-            setContentView(R.layout.main_activity_nagvigation_tablet);
+            setContentView(R.layout.main_activity_navigation_tablet);
         } else {
-            setContentView(R.layout.main_activity_nagvigation);
+            setContentView(R.layout.main_activity_navigation);
         }
 
         mTextView = initializeTextView();
@@ -542,6 +544,25 @@ public class MainMenuActivity extends MPDroidActivities.MPDroidActivity implemen
 
         /** Reset the persistent override when the application is reset. */
         mApp.setPersistentOverride(false);
+    }
+
+    public void onNewIntent(Intent i)
+    {
+        final String queryAction = i.getAction();
+        final String PLAY_SERVICES_ACTION_SEARCH
+            = "com.google.android.gms.actions.SEARCH_ACTION";
+
+        if (Intent.ACTION_SEARCH.equals(queryAction) || PLAY_SERVICES_ACTION_SEARCH
+            .equals(queryAction))
+        {
+            String query = i.getStringExtra(SearchManager.QUERY).trim();
+            pushLibraryFragment(new SearchFragment(query));
+            final SearchRecentSuggestions suggestions =
+                new SearchRecentSuggestions(this,
+                                            SearchRecentProvider.AUTHORITY,
+                                            SearchRecentProvider.MODE);
+            suggestions.saveRecentQuery(query, null);
+        }
     }
 
     @Override
@@ -772,13 +793,11 @@ public class MainMenuActivity extends MPDroidActivities.MPDroidActivity implemen
     }
 
     @Override
-    public void pushLibraryFragment(final Fragment fragment, final String label) {
-        final String title;
-        if (fragment instanceof BrowseFragment) {
-            title = ((BrowseFragment) fragment).getTitle();
-        } else {
-            title = fragment.toString();
-        }
+    public void pushLibraryFragment(final BrowseFragmentNew fragment)
+    {
+        final String title=fragment.getTitle();
+        String label=fragment.getClass().getSimpleName();
+
         final FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
         ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
         ft.replace(R.id.library_root_frame, fragment);
@@ -871,6 +890,12 @@ public class MainMenuActivity extends MPDroidActivities.MPDroidActivity implemen
                 break;
         }
         refreshActionBarTitle();
+    }
+
+    // TODO:uwe
+    public void showLibraryView()
+    {
+        mSlidingLayout.collapsePanel();
     }
 
     public enum DisplayMode {

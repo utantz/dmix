@@ -22,13 +22,18 @@ def gitShortHash() {
 
 android {
     compileSdkVersion 21
-    buildToolsVersion "21.1.1"
+    // buildToolsVersion "21.1.2"
+    buildToolsVersion "24.0.0"
 
     defaultConfig {
         minSdkVersion 14
         targetSdkVersion 21
         versionCode 54
         versionName "1.07.2 Final " + gitShortHash()
+
+        jackOptions {
+            enabled true
+        }
     }
 
     lintOptions {
@@ -37,8 +42,8 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_7
-        targetCompatibility JavaVersion.VERSION_1_7
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 
     productFlavors {
@@ -59,14 +64,14 @@ android {
             description "Generates Javadoc for $variant.name."
             source = variant.javaCompile.source
             ext.androidJar =
-                    "${android.plugin.sdkHandler.sdkFolder}" +
+                    "${android.sdkDirectory}" +
                             "/platforms/${android.compileSdkVersion}/android.jar"
             classpath = files(variant.javaCompile.classpath.files) + files(ext.androidJar)
 
             options {
                 links("http://docs.oracle.com/javase/7/docs/api/");
                 linksOffline("http://developer.android.com/reference",
-                        "${android.plugin.sdkHandler.sdkFolder}/docs/reference");
+                        "${android.sdkDirectory}/docs/reference");
             }
 
             exclude {
@@ -79,13 +84,13 @@ android {
 dependencies {
 
     // Support Libraries
-    compile 'com.android.support:support-v4:21.0.2'
-    compile 'com.android.support:appcompat-v7:21.0.2'
 
     // Projects
     compile project(':JMPDCommAndroid')
 
     // Libraries from maven
+    compile 'com.android.support:support-v4:21.0.3'
+    compile 'com.android.support:appcompat-v7:21.0.3'
     compile 'com.sothree.slidinguppanel:library:2.0.1'
     compile 'com.github.chrisbanes.actionbarpulltorefresh:library:0.9.3'
     compile 'asia.ivity.android:drag-sort-listview:1.0'

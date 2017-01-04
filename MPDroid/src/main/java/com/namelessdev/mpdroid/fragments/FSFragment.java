@@ -46,11 +46,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-public class FSFragment extends BrowseFragment {
+public class FSFragment extends BrowseFragment
+{
 
     private static final String EXTRA_DIRECTORY = "directory";
 
-    private static final String TAG = "FSFragment";
+    protected final String getTAG() { return "FSFragment"; }
 
     private Directory mCurrentDirectory = null;
 
@@ -68,7 +69,7 @@ public class FSFragment extends BrowseFragment {
         try {
             final Directory toAdd = mCurrentDirectory.getDirectory(item.getName());
             if (toAdd == null) {
-                mApp.oMPDAsyncHelper.oMPD.add((FilesystemTreeEntry) item, replace, play);
+                getApp().oMPDAsyncHelper.oMPD.add((FilesystemTreeEntry) item, replace, play);
                 if (item instanceof PlaylistFile) {
                     Tools.notifyUser(R.string.playlistAdded, item);
                 } else {
@@ -76,11 +77,11 @@ public class FSFragment extends BrowseFragment {
                 }
             } else {
                 // Valid directory
-                mApp.oMPDAsyncHelper.oMPD.add(toAdd, replace, play);
+                getApp().oMPDAsyncHelper.oMPD.add(toAdd, replace, play);
                 Tools.notifyUser(R.string.addedDirectoryToPlaylist, item);
             }
         } catch (final IOException | MPDException e) {
-            Log.e(TAG, "Failed to add.", e);
+            Log.e(getTAG(), "Failed to add.", e);
         }
     }
 
@@ -92,19 +93,19 @@ public class FSFragment extends BrowseFragment {
                 if (item instanceof Music) {
                     final Collection<Music> songs = new ArrayList<>(1);
                     songs.add((Music) item);
-                    mApp.oMPDAsyncHelper.oMPD.addToPlaylist(playlist, songs);
+                    getApp().oMPDAsyncHelper.oMPD.addToPlaylist(playlist, songs);
                     Tools.notifyUser(R.string.songAdded, item);
                 } else if (item instanceof PlaylistFile) {
-                    mApp.oMPDAsyncHelper.oMPD.getPlaylist()
+                    getApp().oMPDAsyncHelper.oMPD.getPlaylist()
                             .load(((FilesystemTreeEntry) item).getFullPath());
                 }
             } else {
                 // Valid directory
-                mApp.oMPDAsyncHelper.oMPD.addToPlaylist(playlist, toAdd);
+                getApp().oMPDAsyncHelper.oMPD.addToPlaylist(playlist, toAdd);
                 Tools.notifyUser(R.string.addedDirectoryToPlaylist, item);
             }
         } catch (final IOException | MPDException e) {
-            Log.e(TAG, "Failed to add.", e);
+            Log.e(getTAG(), "Failed to add.", e);
         }
     }
 
@@ -206,55 +207,61 @@ public class FSFragment extends BrowseFragment {
 
     @Override
     public void onItemClick(final AdapterView<?> parent, final View view, final int position,
-            final long id) {
+            final long id)
+    {
         // click on a file, not dir
-        if (position > mNumSubDirs - 1 || mNumSubDirs == 0) {
+        if (position > mNumSubDirs - 1 || mNumSubDirs == 0)
+        {
 
             final FilesystemTreeEntry item = (FilesystemTreeEntry) mItems.get(position);
-            mApp.oMPDAsyncHelper.execAsync(new Runnable() {
-                @Override
-                public void run() {
+            getApp().oMPDAsyncHelper.execAsync(
+                ()->
+                {
                     try {
                         if (item instanceof Music) {
-                            mApp.oMPDAsyncHelper.oMPD
-                                    .add(item, mApp.isInSimpleMode(), mApp.isInSimpleMode());
-                            if (!mApp.isInSimpleMode()) {
+                            getApp().oMPDAsyncHelper.oMPD
+                                    .add(item, getApp().isInSimpleMode(), getApp().isInSimpleMode());
+                            if (!getApp().isInSimpleMode()) {
                                 Tools.notifyUser(R.string.songAdded, item);
                             }
                         } else if (item instanceof PlaylistFile) {
-                            mApp.oMPDAsyncHelper.oMPD.getPlaylist().load(item.getFullPath());
+                            getApp().oMPDAsyncHelper.oMPD.getPlaylist().load(item.getFullPath());
                         }
                     } catch (final IOException | MPDException e) {
-                        Log.e(TAG, "Failed to add.", e);
+                        Log.e(getTAG(), "Failed to add.", e);
                     }
                 }
-            });
+            );
         } else {
             final String dir = ((FilesystemTreeEntry) mItems.toArray()[position]).getFullPath();
             ((ILibraryFragmentActivity) getActivity()).pushLibraryFragment(
-                    new FSFragment().init(dir), "filesystem");
+                    new FSFragment().init(dir));
         }
 
     }
 
     @Override
-    public boolean onOptionsItemSelected(final MenuItem item) {
+    public boolean onOptionsItemSelected(final MenuItem item)
+    {
         final boolean result;
 
         // Menu actions...
-        if (item.getItemId() == R.id.menu_update) {
-            mApp.oMPDAsyncHelper.execAsync(new Runnable() {
-                @Override
-                public void run() {
+        if (item.getItemId() == R.id.menu_update)
+        {
+            getApp().oMPDAsyncHelper.execAsync(
+                ()->
+                {
                     try {
-                        mApp.oMPDAsyncHelper.oMPD.refreshDatabase(mDirectory);
+                        getApp().oMPDAsyncHelper.oMPD.refreshDatabase(mDirectory);
                     } catch (final IOException | MPDException e) {
-                        Log.e(TAG, "Failed to refresh database.", e);
+                        Log.e(getTAG(), "Failed to refresh database.", e);
                     }
                 }
-            });
+            );
             result = true;
-        } else {
+        }
+        else
+        {
             result = super.onOptionsItemSelected(item);
         }
 
@@ -275,9 +282,9 @@ public class FSFragment extends BrowseFragment {
         }
 
         try {
-            mApp.oMPDAsyncHelper.oMPD.refreshDirectory(mCurrentDirectory);
+            getApp().oMPDAsyncHelper.oMPD.refreshDirectory(mCurrentDirectory);
         } catch (final IOException | MPDException e) {
-            Log.e(TAG, "Failed to refresh current directory", e);
+            Log.e(getTAG(), "Failed to refresh current directory", e);
         }
 
     }

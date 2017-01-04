@@ -41,13 +41,14 @@ import android.widget.AdapterView.AdapterContextMenuInfo;
 
 import java.io.IOException;
 
-public class PlaylistsFragment extends BrowseFragment {
+public class PlaylistsFragment extends BrowseFragment
+{
 
     public static final int DELETE = 102;
 
     public static final int EDIT = 101;
 
-    private static final String TAG = "PlaylistsFragment";
+    protected final String getTAG() { return "PlaylistsFragment"; }
 
     public PlaylistsFragment() {
         super(R.string.addPlaylist, R.string.playlistAdded, null);
@@ -56,13 +57,13 @@ public class PlaylistsFragment extends BrowseFragment {
     @Override
     protected void add(final Item item, final boolean replace, final boolean play) {
         try {
-            mApp.oMPDAsyncHelper.oMPD.add((PlaylistFile) item, replace, play);
+            getApp().oMPDAsyncHelper.oMPD.add((PlaylistFile) item, replace, play);
             if (isAdded()) {
                 Tools.notifyUser(mIrAdded, item);
             }
 
         } catch (final IOException | MPDException e) {
-            Log.e(TAG, "Failed to add.", e);
+            Log.e(getTAG(), "Failed to add.", e);
         }
     }
 
@@ -73,9 +74,9 @@ public class PlaylistsFragment extends BrowseFragment {
     @Override
     protected void asyncUpdate() {
         try {
-            mItems = mApp.oMPDAsyncHelper.oMPD.getPlaylists(true);
+            mItems = getApp().oMPDAsyncHelper.oMPD.getPlaylists(true);
         } catch (final IOException | MPDException e) {
-            Log.e(TAG, "Failed to update.", e);
+            Log.e(getTAG(), "Failed to update.", e);
         }
     }
 
@@ -101,8 +102,7 @@ public class PlaylistsFragment extends BrowseFragment {
     public void onItemClick(final AdapterView<?> parent, final View view, final int position,
             final long id) {
         ((ILibraryFragmentActivity) getActivity()).pushLibraryFragment(
-                new StoredPlaylistFragment().init(mItems.get(position).getName()),
-                "stored_playlist");
+                new StoredPlaylistFragment().init(mItems.get(position).getName()));
     }
 
     @Override
@@ -155,7 +155,7 @@ public class PlaylistsFragment extends BrowseFragment {
             if (which == DialogInterface.BUTTON_POSITIVE) {
                 final String playlist = mItems.get(mItemIndex).getName();
                 try {
-                    mApp.oMPDAsyncHelper.oMPD.getPlaylist().removePlaylist(playlist);
+                    getApp().oMPDAsyncHelper.oMPD.getPlaylist().removePlaylist(playlist);
                     if (isAdded()) {
                         Tools.notifyUser(R.string.playlistDeleted, playlist);
                     }
